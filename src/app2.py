@@ -2,9 +2,46 @@ import sounddevice as sd
 import numpy as np
 from scipy.io.wavfile import write
 import time
+import requests
+
+import base64
+
 
 def PI_ID():
     return "1"
+
+def LATITUDE():
+    return "37.503808691555875" 
+
+def LONGTITUDE():
+    return "126.95596349300216"
+
+# {
+#     id : 2,
+#     date : "2024-01-24",
+#     time : "13:51:50",
+#     latitude : 37.5058,
+#     longtitude : 126.956,
+#     sound: "base 64 string"
+# }
+
+# WAV 파일을 읽고 Base64로 인코딩
+def encode_audio(file_path):
+    with open(file_path, 'rb') as audio_file:
+        encoded_audio = base64.b64encode(audio_file.read())
+    return encoded_audio
+
+def post_to_server(filename):
+    print("서버로 전송 시도")
+    data = {
+            'id': PI_ID(), 
+            'date': time.strftime('%Y-%m-%d'),
+            'time': time.strftime('%H:%M:%S'),
+            'latitude': LATITUDE(),
+            'longtitude': LONGTITUDE(),
+            'sound': encode_audio(filename)
+        }
+    response = requests.post('http://localhost:3000/rasberry', data=data)
 
 def sound_pressure_level(signal):
     """ Calculate the sound pressure level of the signal """
@@ -19,6 +56,7 @@ def record_audio(duration, fs, filename):
     sd.wait()  # Wait until recording is finished
     write(filename, fs, recording)  # Save the recording
     print(f"녹음 완료: {filename}")
+    post_to_server(filename)
 
 def main():
     threshold = 50  # dB
