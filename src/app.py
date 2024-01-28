@@ -1,53 +1,82 @@
 import sounddevice as sd
-import pyaudio
-import wave
 import numpy as np
-import time as pytime
-import threading
+from scipy.io.wavfile import write
+import time
+import requests
 
-# 소리 녹음에 사용되는 설정
-CHUNK = 1024
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 44100
-RECORD_SECONDS = 2
-WAVE_OUTPUT_FILENAME = "output.wav"
+import base64
 
-recording = False  # 녹음 상태 플래그
 
-def print_sound_level(indata, frames, time, status):
-    global recording
-    volume_norm = np.linalg.norm(indata) * 10
-    if volume_norm > 50 and not recording:
-        recording = True
-        print("High volume detected, starting to record...")
-        threading.Thread(target=record_audio).start()
+def PI_ID():
+    return "1"
 
-# 오디오 녹음 함수
-def record_audio():
-    print("Start to record the audio.")
-    p = pyaudio.PyAudio()
-    stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+def LATITUDE():
+    return "37.503808691555875" 
 
-    frames = []
-    for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-        print("Reading chunk number:", i)
-        data = stream.read(CHUNK, exception_on_overflow = False)
-        frames.append(data)
+def LONGTITUDE():
+    return "126.95596349300216"
 
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
+# {
+#     id : 2,
+#     date : "2024-01-24",
+#     time : "13:51:50",
+#     latitude : 37.5058,
+#     longtitude : 126.956,
+#     sound: "base 64 string"
+# }
 
-    wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
-    wf.writeframes(b''.join(frames))
-    wf.close()
+# WAV 파일을 읽고 Base64로 인코딩
+def encode_audio(file_path):
+    with open(file_path, 'rb') as audio_file:
+        encoded_audio = base64.b64encode(audio_file.read())
+    return encoded_audio
 
-    print("Recording finished and saved to", WAVE_OUTPUT_FILENAME)
+def post_to_server(filename):
+    print("서버로 전송 시도")
+    data = {
+            'id': PI_ID(), 
+            'date': time.strftime('%Y-%m-%d'),
+            'time': time.strftime('%H:%M:%S'),
+            'latitude': LATITUDE(),
+            'longtitude': LONGTITUDE(),
+            'sound': encode_audio(filename)
+        }
+    response = requests.post('http://localhost:3000/rasberry', data=data)
 
-# 소리 감지 시작
-with sd.InputStream(callback=print_sound_level):
-    sd.sleep(10000)  # 10초 동안 대기하며 소리 감지
+def sound_pressure_level(signal):
+    """ Calculate the sound pressure level of the signal """
+    rms = np.sqrt(np.mean(signal**2))
+    spl = 20 * np.log10(rms / 20e-6)  # Sound Pressure Level in dB
+    return spl
+
+def record_audio(duration, fs, filename):
+    """ Record audio for a given duration and save it to a file """
+    print("녹음 시작...")
+    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+    sd.wait()  # Wait until recording is finished
+    write(filename, fs, recording)  # Save the recording
+    print(f"녹음 완료: {filename}")
+    post_to_server(filename)
+
+def main():
+    threshold = 50  # dB
+    fs = 44100  # Sample rate
+    duration = 5  # seconds
+
+    try:
+        while True:
+            print("데시벨 측정 중...")
+            recording = sd.rec(int(fs * 2), samplerate=fs, channels=1, dtype='float64')
+            sd.wait()
+            spl = sound_pressure_level(recording[:,0])
+            print(f"현재 데시벨: {spl:.2f} dB")
+
+            if spl > threshold:
+                filename = f"{PI_ID()}_{time.strftime('%Y%m%d_%H%M%S')}.wav"
+                record_audio(duration, fs, filename)
+
+    except KeyboardInterrupt:
+        print("프로그램 종료")
+
+if __name__ == "__main__":
+    main()
