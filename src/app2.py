@@ -3,6 +3,9 @@ import numpy as np
 from scipy.io.wavfile import write
 import time
 
+def PI_ID():
+    return "1"
+
 def sound_pressure_level(signal):
     """ Calculate the sound pressure level of the signal """
     rms = np.sqrt(np.mean(signal**2))
@@ -31,7 +34,7 @@ def main():
             print(f"현재 데시벨: {spl:.2f} dB")
 
             if spl > threshold:
-                filename = f"recording_{time.strftime('%Y%m%d_%H%M%S')}.wav"
+                filename = f"{PI_ID()}_{time.strftime('%Y%m%d_%H%M%S')}.wav"
                 record_audio(duration, fs, filename)
 
     except KeyboardInterrupt:
