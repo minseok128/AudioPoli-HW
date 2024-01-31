@@ -3,9 +3,8 @@ import numpy as np
 from scipy.io.wavfile import write
 import time
 import requests
-
 import base64
-
+import io
 
 def PI_ID():
     return "1"
@@ -16,61 +15,54 @@ def LATITUDE():
 def LONGTITUDE():
     return "126.95596349300216"
 
-# {
-#     id : 2,
-#     date : "2024-01-24",
-#     time : "13:51:50",
-#     latitude : 37.5058,
-#     longtitude : 126.956,
-#     sound: "base 64 string"
-# }
-
-# WAV 파일을 읽고 Base64로 인코딩
-def encode_audio(file_path):
-    with open(file_path, 'rb') as audio_file:
-        encoded_audio = base64.b64encode(audio_file.read())
+def encode_audio(data, fs):
+    # 메모리에 있는 오디오 데이터를 wav 포맷으로 변환
+    buffer = io.BytesIO()
+    write(buffer, fs, data)
+    buffer.seek(0)  # 버퍼의 시작 위치로 이동
+    encoded_audio = base64.b64encode(buffer.read())
     return encoded_audio
 
-def post_to_server(filename):
+def post_to_server(data, fs):
+    encoded_audio = encode_audio(data, fs)
     # 서버로 전송 시도
-    data = {
+    post_data = {
             'id': PI_ID(), 
             'date': time.strftime('%Y-%m-%d'),
             'time': time.strftime('%H:%M:%S'),
             'latitude': LATITUDE(),
             'longtitude': LONGTITUDE(),
-            'sound': encode_audio(filename)
+            'sound': encoded_audio
         }
-    response = requests.post('http://localhost:3000/rasberry', data=data)
+    response = requests.post('http://localhost:3000/rasberry', data=post_data)
 
 def sound_pressure_level(signal):
     rms = np.sqrt(np.mean(signal**2))
     spl = 20 * np.log10(rms / 20e-6)  # Sound Pressure Level in dB
     return spl
 
-def record_audio(duration, fs, filename):
+def record_audio(duration, fs):
     print("recording start")
-    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='float64')
     sd.wait()  # Wait until recording is finished
-    write(filename, fs, recording)  # Save the recording
-    print(f"recording deon: {filename}")
-    post_to_server(filename)
+    print("recording done")
+    return recording
 
 def main():
     threshold = 50  # dB
     fs = 44100  # Sample rate
-    duration = 5  # seconds
+    duration = 3  # seconds
 
     try:
         while True:
-            recording = sd.rec(int(fs * 2), samplerate=fs, channels=1, dtype='float64')
+            recording = sd.rec(int(fs), samplerate=fs, channels=1, dtype='float64')
             sd.wait()
             spl = sound_pressure_level(recording[:,0])
             print(f"now: {spl:.2f} dB")
 
             if spl > threshold:
-                filename = f"{PI_ID()}_{time.strftime('%Y%m%d_%H%M%S')}.wav"
-                record_audio(duration, fs, filename)
+                audio_data = record_audio(duration, fs)
+                post_to_server(audio_data, fs)
 
     except KeyboardInterrupt:
         print("exit")
