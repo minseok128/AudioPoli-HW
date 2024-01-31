@@ -16,7 +16,7 @@ app.post('/rasberry', (req, res) => {
     const audioBuffer = Buffer.from(encodedAudio, 'base64');
 
     // 파일로 저장
-    fs.writeFile('output.wav', audioBuffer, (err) => {
+    fs.writeFile(`output${req.body.time}.wav`, audioBuffer, (err) => {
         if (err) {
             console.error(err);
             res.status(500).send('Error saving the file');
