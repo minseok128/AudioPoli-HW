@@ -43,7 +43,7 @@ def sound_pressure_level(signal):
 
 def record_audio(duration, fs):
     print("recording start")
-    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='float64')
+    recording = sd.rec((duration * fs) & 0xFFFFFFFF, samplerate=fs, channels=1, dtype='float64')
     sd.wait()  # Wait until recording is finished
     print("recording done")
     return recording
@@ -55,7 +55,7 @@ def main():
 
     try:
         while True:
-            recording = sd.rec(int(fs), samplerate=fs, channels=1, dtype='float64')
+            recording = sd.rec(fs & 0xFFFFFFFF, samplerate=fs, channels=1, dtype='float64')
             sd.wait()
             spl = sound_pressure_level(recording[:,0])
             print(f"now: {spl:.2f} dB")
