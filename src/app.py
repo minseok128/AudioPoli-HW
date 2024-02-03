@@ -3,7 +3,6 @@ import numpy as np
 from scipy.io.wavfile import write
 import time
 import requests
-import base64
 import io
 
 def PI_ID():
@@ -15,33 +14,11 @@ def LATITUDE():
 def LONGTITUDE():
     return "126.95596349300216"
 
-# def encode_audio(data, fs):
-#     # 메모리에 있는 오디오 데이터를 wav 포맷으로 변환
-#     buffer = io.BytesIO()
-#     write(buffer, fs, data)
-#     buffer.seek(0)  # 버퍼의 시작 위치로 이동
-#     encoded_audio = base64.b64encode(buffer.read())
-#     return encoded_audio
-
-# def post_to_server(data, fs):
-#     encoded_audio = encode_audio(data, fs)
-#     # 서버로 전송 시도
-#     post_data = {
-#             'id': PI_ID(), 
-#             'date': time.strftime('%Y-%m-%d'),
-#             'time': time.strftime('%H:%M:%S'),
-#             'latitude': LATITUDE(),
-#             'longtitude': LONGTITUDE(),
-#             'sound': encoded_audio
-#         }
-#     response = requests.post('http://localhost:3000/rasberry', data=post_data)
-
 def post_to_server(data, fs):
     # 메모리에 있는 오디오 데이터를 wav 포맷으로 변환
     buffer = io.BytesIO()
     write(buffer, fs, data)
     buffer.seek(0)
-
     # 파일 형식으로 서버로 전송
     files = {
         'sound': (f"{PI_ID()}_{time.strftime('%Y%m%d_%H%M%S')}.wav", buffer, 'audio/wav')
@@ -53,8 +30,11 @@ def post_to_server(data, fs):
         'latitude': LATITUDE(),
         'longtitude': LONGTITUDE()
     }
-    response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
-
+    try:
+        response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
+        response.raise_for_status()  # 응답 상태 코드가 200 범위가 아닐 경우 예외 발생
+    except Exception as err:
+        print("error: ", err)
 
 def sound_pressure_level(signal):
     rms = np.sqrt(np.mean(signal**2))
