@@ -32,6 +32,7 @@ def post_to_server(data, fs):
     }
     try:
         response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
+        print(response.text)
         response.raise_for_status()  # 응답 상태 코드가 200 범위가 아닐 경우 예외 발생
     except Exception as err:
         print("error: ", err)
@@ -51,7 +52,7 @@ def record_audio(duration, fs):
 def main():
     threshold = 50  # dB
     fs = 44100  # Sample rate
-    duration = 3  # seconds
+    duration = 5  # seconds
 
     try:
         while True:
