@@ -9,10 +9,10 @@ def PI_ID():
     return "1"
 
 def LATITUDE():
-    return "37.503808691555875" 
+    return "37.503808"
 
 def LONGTITUDE():
-    return "126.95596349300216"
+    return "126.955963"
 
 def post_to_server(data, fs):
     # 메모리에 있는 오디오 데이터를 wav 포맷으로 변환
@@ -20,15 +20,16 @@ def post_to_server(data, fs):
     write(buffer, fs, data)
     buffer.seek(0)
     # 파일 형식으로 서버로 전송
+    now_id = f"{PI_ID()}{time.strftime('%Y%m%d%H%M%S')}"
     files = {
-        'sound': (f"{PI_ID()}_{time.strftime('%Y%m%d_%H%M%S')}.wav", buffer, 'audio/wav')
+        'sound': (f"{now_id}.wav", buffer, 'audio/wav')
     }
     post_data = {
-        'id': PI_ID(),
+        'id': int(now_id),
         'date': time.strftime('%Y-%m-%d'),
         'time': time.strftime('%H:%M:%S'),
         'latitude': LATITUDE(),
-        'longtitude': LONGTITUDE()
+        'longitude': LONGTITUDE()
     }
     try:
         response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
