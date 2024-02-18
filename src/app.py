@@ -11,7 +11,7 @@ def PI_ID():
 def LATITUDE():
     return "37.503808"
 
-def LONGTITUDE():
+def LONGITUDE():
     return "126.955963"
 
 def post_to_server(data, fs):
@@ -29,7 +29,7 @@ def post_to_server(data, fs):
         'date': time.strftime('%Y-%m-%d'),
         'time': time.strftime('%H:%M:%S'),
         'latitude': LATITUDE(),
-        'longitude': LONGTITUDE()
+        'longitude': LONGITUDE()
     }
     try:
         response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
