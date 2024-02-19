@@ -4,6 +4,8 @@ from scipy.io.wavfile import write
 import time
 import requests
 import io
+import os
+from dotenv import load_dotenv
 
 def PI_ID():
     return "1"
