@@ -4,9 +4,12 @@ from scipy.io.wavfile import write
 import time
 import requests
 import io
+import os
+from dotenv import load_dotenv
+
 
 def PI_ID():
-    return "2"
+    return "5"
 
 def LATITUDE():
     latitudes = {
@@ -56,7 +59,7 @@ def post_to_server(data, fs):
         'longitude': LONGITUDE()
     }
     try:
-        response = requests.post('http://localhost:3000/rasberry', files=files, data=post_data)
+        response = requests.post(os.getenv("SERVERURL"), files=files, data=post_data)
         print(response.text)
         response.raise_for_status()  # 응답 상태 코드가 200 범위가 아닐 경우 예외 발생
     except Exception as err:
@@ -75,6 +78,7 @@ def record_audio(duration, fs):
     return recording
 
 def main():
+    load_dotenv()
     threshold = 50  # dB
     fs = 44100  # Sample rate
     duration = 5  # seconds
