@@ -22,7 +22,7 @@ def post_to_server(data, fs):
     write(buffer, fs, data)
     buffer.seek(0)
     # 파일 형식으로 서버로 전송
-    now_id = f"{PI_ID()}{time.strftime('%Y%m%d%H%M%S')}"
+    now_id = f"{time.strftime('%Y%m%d%H%M%S')}{PI_ID()}"
     files = {
         'sound': (f"{now_id}.wav", buffer, 'audio/wav')
     }
